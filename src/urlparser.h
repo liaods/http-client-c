@@ -26,6 +26,13 @@
 */
 #ifndef _URL_PARSER_H__
 #define _URL_PARSER_H__
+#ifdef _LINUX
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ctype.h>
+#endif
 
 /*
 	Represents an url

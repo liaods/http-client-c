@@ -25,6 +25,9 @@
 	http://www.ietf.org/rfc/rfc2616.txt
 */
 
+#ifndef _STRINGX_H__
+#define _STRINGX_H__
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -144,15 +147,17 @@ char *str_dup(const char *src)
 char *str_replace(char *search , char *replace , char *subject)
 {
 	char  *p = NULL , *old = NULL , *new_subject = NULL ;
-	int c = 0 , search_size;
+	int c = 0 , search_size = 0;
 	search_size = strlen(search);
 	for(p = strstr(subject , search) ; p != NULL ; p = strstr(p + search_size , search))
 	{
 		c++;
 	}	
 	c = ( strlen(replace) - search_size )*c + strlen(subject);
-	new_subject = (char*)malloc( c );
-	strcpy(new_subject , "");
+	new_subject = (char*)malloc( c + 1 );
+	if ( !new_subject )
+		return NULL;
+	memset((void *)new_subject, 0, c);
 	old = subject;	
 	for(p = strstr(subject , search) ; p != NULL ; p = strstr(p + search_size , search))
 	{
@@ -242,7 +247,7 @@ void encodeblock( unsigned char in[], char b64str[], int len )
 char* base64_encode(char *clrstr) 
 {
 	char *b64dst = (char*)malloc(strlen(clrstr) + 50);
-	char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	//char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	unsigned char in[3];
 	int i, len = 0;
 	int j = 0;
@@ -268,3 +273,5 @@ char* base64_encode(char *clrstr)
 	b64dst = (char*)realloc(b64dst, strlen(b64dst) + 1);
 	return b64dst;
 }
+
+#endif

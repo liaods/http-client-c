@@ -24,12 +24,12 @@
 
 	http://www.ietf.org/rfc/rfc2616.txt
 */
-
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h> // close
 #ifdef _WIN32
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
@@ -47,9 +47,10 @@
 #endif
 
 #include <errno.h>
-#include "stringx.h";
+#include "stringx.h"
 #include "urlparser.h"
 
+#define BUFSIZE 8192
 /*
 	Prototype functions
 */
@@ -97,6 +98,7 @@ struct http_response* handle_redirect_get(struct http_response* hresp, char* cus
 		/* We're not dealing with a redirect, just return the same structure */
 		return hresp;
 	}
+	return NULL;
 }
 
 /*
@@ -123,6 +125,7 @@ struct http_response* handle_redirect_head(struct http_response* hresp, char* cu
 		/* We're not dealing with a redirect, just return the same structure */
 		return hresp;
 	}
+	return NULL;
 }
 
 /*
@@ -149,6 +152,7 @@ struct http_response* handle_redirect_post(struct http_response* hresp, char* cu
 		/* We're not dealing with a redirect, just return the same structure */
 		return hresp;
 	}
+	return NULL;
 }
 
 /*
@@ -157,23 +161,23 @@ struct http_response* handle_redirect_post(struct http_response* hresp, char* cu
 struct http_response* http_req(char *http_headers, struct parsed_url *purl)
 {
 	/* Parse url */
-	if(purl == NULL)
+	if(purl == NULL || purl->ip == NULL)
 	{
-		printf("Unable to parse url");
+		printf("Unable to parse url\n");
 		return NULL;
 	}
 
 	/* Declare variable */
 	int sock;
 	int tmpres;
-	char buf[BUFSIZ+1];
+//	char buf[BUFSIZ+1];
 	struct sockaddr_in *remote;
 
 	/* Allocate memeory for htmlcontent */
 	struct http_response *hresp = (struct http_response*)malloc(sizeof(struct http_response));
 	if(hresp == NULL)
 	{
-		printf("Unable to allocate memory for htmlcontent.");
+		printf("Unable to allocate memory for htmlcontent.\n");
 		return NULL;
 	}
 	hresp->body = NULL;
@@ -185,22 +189,22 @@ struct http_response* http_req(char *http_headers, struct parsed_url *purl)
 	/* Create TCP socket */
 	if((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-	    printf("Can't create TCP socket");
+	    printf("Can't create TCP socket\n");
 		return NULL;
 	}
 
 	/* Set remote->sin_addr.s_addr */
-	remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in *));
+	remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in ));
 	remote->sin_family = AF_INET;
   	tmpres = inet_pton(AF_INET, purl->ip, (void *)(&(remote->sin_addr.s_addr)));
   	if( tmpres < 0)
   	{
-    	printf("Can't set remote->sin_addr.s_addr");
+    	printf("Can't set remote->sin_addr.s_addr\n");
     	return NULL;
   	}
 	else if(tmpres == 0)
   	{
-		printf("Not a valid IP");
+		printf("Not a valid IP\n");
     	return NULL;
   	}
 	remote->sin_port = htons(atoi(purl->port));
@@ -208,25 +212,26 @@ struct http_response* http_req(char *http_headers, struct parsed_url *purl)
 	/* Connect */
 	if(connect(sock, (struct sockaddr *)remote, sizeof(struct sockaddr)) < 0)
 	{
-	    printf("Could not connect");
+	    printf("Could not connect\n");
 		return NULL;
 	}
 
 	/* Send headers to server */
 	int sent = 0;
-	while(sent < strlen(http_headers))
+	while(sent < (int)strlen(http_headers))
 	{
 	    tmpres = send(sock, http_headers+sent, strlen(http_headers)-sent, 0);
 		if(tmpres == -1)
 		{
-			printf("Can't send headers");
+			printf("Can't send headers\n");
 			return NULL;
 		}
 		sent += tmpres;
 	 }
 
 	/* Recieve into response*/
-	char *response = (char*)malloc(0);
+	char *response = (char*)malloc(1);
+    *response = 0;
 	char BUF[BUFSIZ];
 	size_t recived_len = 0;
 	while((recived_len = recv(sock, BUF, BUFSIZ-1, 0)) > 0)
@@ -243,7 +248,7 @@ struct http_response* http_req(char *http_headers, struct parsed_url *purl)
 		#else
 			close(sock);
 		#endif
-        printf("Unabel to recieve");
+        printf("Unabel to recieve\n");
 		return NULL;
     }
 
@@ -296,7 +301,7 @@ struct http_response* http_get(char *url, char *custom_headers)
 	struct parsed_url *purl = parse_url(url);
 	if(purl == NULL)
 	{
-		printf("Unable to parse url");
+		printf("Unable to parse url\n");
 		return NULL;
 	}
 
@@ -375,7 +380,7 @@ struct http_response* http_post(char *url, char *custom_headers, char *post_data
 	struct parsed_url *purl = parse_url(url);
 	if(purl == NULL)
 	{
-		printf("Unable to parse url");
+		printf("Unable to parse url\n");
 		return NULL;
 	}
 
@@ -454,7 +459,7 @@ struct http_response* http_head(char *url, char *custom_headers)
 	struct parsed_url *purl = parse_url(url);
 	if(purl == NULL)
 	{
-		printf("Unable to parse url");
+		printf("Unable to parse url\n");
 		return NULL;
 	}
 
@@ -532,7 +537,7 @@ struct http_response* http_options(char *url)
 	struct parsed_url *purl = parse_url(url);
 	if(purl == NULL)
 	{
-		printf("Unable to parse url");
+		printf("Unable to parse url\n");
 		return NULL;
 	}
 

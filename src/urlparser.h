@@ -24,6 +24,8 @@
 	
 	http://www.ietf.org/rfc/rfc2616.txt
 */
+#ifndef _URL_PARSER_H__
+#define _URL_PARSER_H__
 
 /*
 	Represents an url
@@ -66,11 +68,11 @@ void parsed_url_free(struct parsed_url *purl)
 */
 char* hostname_to_ip(char *hostname)
 {
-	char *ip = "0.0.0.0";
+	//char *ip = "0.0.0.0";
 	struct hostent *h;
-	if ((h=gethostbyname(hostname)) == NULL) 
+	if ((h=gethostbyname(hostname)) == (struct hostent *)NULL) 
 	{  
-		printf("gethostbyname");
+		printf("gethostbyname\n");
 		return NULL;
 	}
 	return inet_ntoa(*((struct in_addr *)h->h_addr));
@@ -310,10 +312,12 @@ struct parsed_url *parse_url(const char *url)
         purl->port[len] = '\0';
         curstr = tmpstr;
     }
-	else
-	{
-		purl->port = "80";
-	}
+    else
+    {
+        purl->port = (char*)malloc(3);
+        (void)strncpy(purl->port, "80", 2);
+        purl->port[2] = '\0';
+    }
 	
 	/* Get ip */
 	char *ip = hostname_to_ip(purl->host);
@@ -400,3 +404,5 @@ struct parsed_url *parse_url(const char *url)
     }
 	return purl;
 }
+
+#endif
